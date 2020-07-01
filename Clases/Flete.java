@@ -27,8 +27,8 @@ public class Flete extends Transporte {
 
 	public void calcularCostoTotal() {
 		
-		if (this.destino != null)
-			this.costoTotal = costoKms() + this.costoFijoPasajero * this.cantidadPasajeros;
+		if (getDestino() != null)
+			setCostoTotal(costoKms() + this.costoFijoPasajero * this.cantidadPasajeros);
 		else 
 			System.out.print("El flete no tiene un destino asignado");
 	}

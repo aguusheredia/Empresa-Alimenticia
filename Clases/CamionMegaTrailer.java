@@ -31,8 +31,8 @@ public class CamionMegaTrailer extends Transporte  {
 	
 	public void calcularCostoTotal() {
 		
-		if (this.destino != null)
-			this.costoTotal = costoKms() + this.seguroDeCarga + this.costoFijo + this.gastoComida;
+		if (getDestino() != null)
+			setCostoTotal (costoKms() + this.seguroDeCarga + this.costoFijo + this.gastoComida);
 		else 
 			System.out.print("El flete no tiene un destino asignado");
 	}

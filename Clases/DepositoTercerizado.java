@@ -5,14 +5,13 @@ public class DepositoTercerizado extends Deposito{
 	//El precio por tonelada debe ser mayor a cero
 	
 	public DepositoTercerizado(boolean refrigeracion, 
-			double capacidadMaxima, double precioTonelada) throws Exception {
-		super(refrigeracion, capacidadMaxima);
-		
-		if (precioTonelada > 0 || !refrigeracion)
-			this.precioTonelada = precioTonelada;
+			double capacidadMaxima, int id, double precioTonelada) throws Exception {
+		super(refrigeracion, capacidadMaxima, id);
 		
 		if (precioTonelada <= 0 && refrigeracion)
 			throw new Exception ("El precio por tonelada debe ser mayor a cero");
+		
+		this.precioTonelada = precioTonelada;
 	}
 
 	public double getPrecioTonelada() {

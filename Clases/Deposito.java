@@ -8,18 +8,19 @@ public class Deposito {
 	private int id;
 	private Map<String, ArrayList<Paquete>> paquetes = new HashMap <String, ArrayList<Paquete>>();
 	private boolean refrigeracion;
-	double capacidadMaxima;
-	double capacidadLibre;
+	private double capacidadMaxima;
+	private double capacidadLibre;
 	
 	//El nombre debe ser una cadena no vacia
 	//La capacidad maxima debe ser mayor a cero
 	
-	public Deposito(boolean refrigeracion, double capacidadMaxima) throws Exception {
+	public Deposito(boolean refrigeracion, double capacidadMaxima , int id) throws Exception {
 		this.refrigeracion = refrigeracion;
 		
 		if (capacidadMaxima > 0) {
 			this.capacidadMaxima = capacidadMaxima;
 			this.capacidadLibre = capacidadMaxima;
+			this.id = id;
 		}
 		
 		if (capacidadMaxima <= 0) 
@@ -31,7 +32,14 @@ public class Deposito {
 		return refrigeracion;
 	}
 
-
+	public double getCapacidad() {
+		return this.capacidadMaxima;
+	}
+	
+	public int getId() {
+		return id;
+	}	
+	
 	//Dado un paquete lo agrega al deposito
 	//De ser posible, devuelve true, de lo contrario, devuelve false
 	public boolean agregarPaquete (Paquete paquete) {
@@ -39,7 +47,7 @@ public class Deposito {
 		if (paquete.getVolumen() <= this.capacidadLibre){
 			//Verifica si requiere frio el paquete
 			if (!paquete.isFrio() || 
-				(paquete.isFrio() && this.refrigeracion)){
+					(paquete.isFrio() && this.refrigeracion)){
 				//Si no habia paquetes con el mismo destino
 				if (!this.paquetes.containsKey(paquete.getDestino()))
 					this.paquetes.put(paquete.getDestino(), new ArrayList<Paquete>());
@@ -48,28 +56,13 @@ public class Deposito {
 				this.capacidadLibre -= paquete.getVolumen();
 				return true;
 			}
-			System.out.println("El deposito " + this.id + " No tiene camara de frio. " +"El paquete necesita frio");
+			//Si no cumple con las condiciones de frio
 			return false;
 		}
-		System.out.println ("No hay lugar en el deposito " + this.id);
+		//Si no hay lugar en el deposito
 		return false;
 	}
 
-
-	public double getCapacidad() {
-		return this.capacidadMaxima;
-	}
-
-	public int getId() {
-		return id;
-	}
-
-
-	public void setId(int id) {
-		this.id = id;
-	}
-
-	
 	//Dado una identificacion de un paquete, revisa si esta alojado en el deposito. De ser asi, lo entrega y lo limpia de su sistema
 	public double entregarPaquetes (ArrayList <Paquete> paquetes, Transporte transporte) {
 		

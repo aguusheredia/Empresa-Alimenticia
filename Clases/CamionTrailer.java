@@ -20,8 +20,8 @@ public class CamionTrailer extends Transporte  {
 	
 	public void calcularCostoTotal() {
 		
-		if (this.destino != null)
-			this.costoTotal = costoKms() + this.seguroDeCarga;
+		if (getDestino() != null)
+			setCostoTotal(costoKms() + this.seguroDeCarga);
 		else 
 			System.out.print("El flete no tiene un destino asignado");
 	}

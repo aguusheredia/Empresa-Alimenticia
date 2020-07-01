@@ -47,12 +47,10 @@ public class Paquete {
 
 	public boolean equals (Paquete p) {
 		
-		//Verifica que no tenga la misma posición de memoria
-		if (this == p)
-			return false;
-		
-		if (this.destino.equals (p.getDestino()) && this.volumen == p.getVolumen() &&
-				this.peso == p.getPeso() && this.frio == p.isFrio())
+		if (this.destino.equals (p.getDestino()) && 
+				this.volumen == p.getVolumen() &&
+				this.peso == p.getPeso() && 
+				this.frio == p.isFrio())
 			return true;
 		
 		return false;

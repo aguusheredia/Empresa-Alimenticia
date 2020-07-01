@@ -5,11 +5,11 @@ import java.util.Map;
 
 public class Empresa {
 
-	String nombre;
-	String cuit;
-	Map <String, Transporte> transportes = new HashMap<String, Transporte>();
-	ArrayList <Deposito> depositos = new ArrayList <Deposito>();
-	Map <String, Destino> destinos = new HashMap <String, Destino>();
+	private String nombre;
+	private String cuit;
+	private Map <String, Transporte> transportes = new HashMap<String, Transporte>();
+	private ArrayList <Deposito> depositos = new ArrayList <Deposito>();
+	private	Map <String, Destino> destinos = new HashMap <String, Destino>();
 	
 	//El nombre debe ser una cadena no vacia
 	//El cuit debe contener 11 digitos numericos
@@ -28,12 +28,14 @@ public class Empresa {
 		if (!Verificacion.verificarCuit(cuit)) 
 			throw new Exception ("El cuit debe tener 11 numeros");
 	}
-
-	//Dado un deposito, lo agrega a la empresa y le asigna un valor de identificacion
-	private void asignarDeposito (Deposito deposito) {
-		depositos.add(deposito);
-		deposito.setId (depositos.size());
+	
+	public Transporte darTransporte (String id) throws Exception {
+		if (!this.transportes.containsKey(id))
+			throw new Exception ("El transporte no esta en la empresa");
+		
+		return this.transportes.get(id);
 	}
+
 	
 	//Dado las caracteriticas, crea y asigna un deposito nuevos a la empresa
 	//Dicho deposito es propio o tercerizado sin frigorifico
@@ -42,14 +44,14 @@ public class Empresa {
 
 		//Si el deposito es propio
 		if (propio) {
-			DepositoPropio nuevo = new DepositoPropio (frigorifico, capacidad);
-			asignarDeposito (nuevo);
+			Deposito nuevo = new Deposito (frigorifico, capacidad, this.depositos.size()+1);
+			this.depositos.add (nuevo);
 			return nuevo.getId();	
 		}
 		//Si es tercerizado
 		else {
-			DepositoTercerizado nuevo = new DepositoTercerizado (frigorifico, capacidad, 0);
-			asignarDeposito (nuevo);
+			DepositoTercerizado nuevo = new DepositoTercerizado (frigorifico, capacidad, this.depositos.size()+1, 0);
+			this.depositos.add (nuevo);
 			return nuevo.getId();
 		}
 		
@@ -57,8 +59,8 @@ public class Empresa {
 
 	//Dado las caracteristica de un deposito Tercerizado con frigorifico, lo crea y lo suma  a la empresa
 	public int agregarDepTercerizFrio (double capacidad, double costoTonelada) throws Exception {
-		DepositoTercerizado nuevo = new DepositoTercerizado (true, capacidad, costoTonelada);
-		asignarDeposito (nuevo);
+		DepositoTercerizado nuevo = new DepositoTercerizado (true, capacidad, this.depositos.size()+1, costoTonelada);
+		this.depositos.add (nuevo);
 		return nuevo.getId();
 	}
 
@@ -70,7 +72,7 @@ public class Empresa {
 											frigorifico, costoKm, segCarga);
 	}
 	
-	//Dado las caracteristicas, crea un transporte de acuerdo con los parÃ¡metros otorgados
+	//Dado las caracteristicas, crea un transporte de acuerdo con los parametros otorgados
 	public void agregarTransporte (String idTransporte, double cargaMax, double capacidad,
 													boolean frigorifico, double costoKm, double segCarga,
 													double costoFijo, double comida) throws Exception {
@@ -80,7 +82,7 @@ public class Empresa {
 													costoFijo, comida);
 	}
 	
-	//Dado las caracteristicas, crea un transporte de acuerdo con los parÃ¡metros otorgados
+	//Dado las caracteristicas, crea un transporte de acuerdo con los parametros otorgados
 	public void agregarTransporte (String idTransporte, double cargaMax, double capacidad, double costoKm,
 										int acomp, double costoPorAcom) throws Exception {
 		agregarFlete (idTransporte, cargaMax, capacidad, costoKm,
@@ -91,14 +93,12 @@ public class Empresa {
 	public void agregarTrailer (String idTransporte, double cargaMax, double capacidad,
 											boolean frigorifico, double costoKm, double segCarga) throws Exception {
 		
-		CamionTrailer nuevo = new CamionTrailer (idTransporte, cargaMax, capacidad,
-										costoKm, frigorifico, segCarga);
 		
 		if (!transportes.containsKey(idTransporte)) {
+			CamionTrailer nuevo = new CamionTrailer (idTransporte, cargaMax, capacidad,
+					costoKm, frigorifico, segCarga);
 			transportes.put(idTransporte, nuevo);
 		}
-		else
-			System.out.println("El transporte ya se encuentra cargado en el sistema");
 		
 	}
 
@@ -107,28 +107,22 @@ public class Empresa {
 													boolean frigorifico, double costoKm, double segCarga,
 													double costoFijo, double comida) throws Exception {
 		
-		CamionMegaTrailer nuevo = new CamionMegaTrailer (idTransporte,cargaMax,capacidad,
-								costoKm,frigorifico,segCarga,costoFijo,comida);
-		
 		if (!transportes.containsKey(idTransporte)) {
+			CamionMegaTrailer nuevo = new CamionMegaTrailer (idTransporte,cargaMax,capacidad,
+					costoKm,frigorifico,segCarga,costoFijo,comida);
 			transportes.put(idTransporte, nuevo);
 		}
-		else
-			System.out.println("El transporte ya se encuentra cargado en el sistema");
 	}
 
 	//Dado las caracteristicas de un flete, lo crea y lo suma a la empresa
 	public void agregarFlete (String idTransporte, double cargaMax, double capacidad, double costoKm,
 										int acomp, double costoPorAcom) throws Exception {
 		
-		Flete flete = new Flete (idTransporte,cargaMax,capacidad,costoKm,costoPorAcom);
-		flete.setCantidadPasajeros (acomp + 1);
-		
 		if (!transportes.containsKey(idTransporte)) {
+			Flete flete = new Flete (idTransporte,cargaMax,capacidad,costoKm,costoPorAcom);
+			flete.setCantidadPasajeros (acomp + 1);
 			transportes.put(idTransporte, flete);
 		}
-		else
-			System.out.println("El transporte ya se encuentra cargado en el sistema");
 		
 	}
 	
@@ -159,25 +153,18 @@ public class Empresa {
 			//Asignacion de transporte en una variable para evitar la busqueda del mismo
 			//en cada interacción
 			Transporte transporte = this.transportes.get(idTransporte);
-			if (transporte.getPaquetes().size() > 0)
+			if (transporte.cantPaquetes() > 0)
 				throw new Exception ("El transporte ya esta cargado");
 			
 			if (destinos.containsKey(destino)) {
 				Destino d = destinos.get(destino);
-				//Excepciones para controlar kilometraje con tipo de transporte
-				if (transporte instanceof CamionTrailer && d.getDistancia() > 500)
-					throw new Exception ("Los camiones trailer solo hacer viajes menores a 500 KM");
-				if (transporte instanceof CamionMegaTrailer && d.getDistancia() <= 500)
-					throw new Exception ("Los camiones mega trailer solo hacer viajes mayores a 500 KM");
-				
-				transporte.setDestino(d);
-				transporte.calcularCostoTotal();	
+				transporte.asignarDestino(d);	
 			}
 			else
 				throw new Exception ("El destino no se encuentra en la empresa");
 		}
 		else
-			System.out.println ("El transporte " + idTransporte + " no se encuentra en la empresa");
+			throw new Exception ("El transporte " + idTransporte + " no se encuentra en la empresa");
 	}
 
 	//Dado un transporte, le asigna la funcion de cargar paquetes correspondientes
@@ -254,7 +241,7 @@ public class Empresa {
 				//Corrobora que el transporte que se envia este vacío, sin destino
 				//Y que tenga las características necesarias para intercambiar la carga
 				if (t.getDestino() == null &&
-					t.getPaquetes().size() == 0 &&
+					t.cantPaquetes() == 0 &&
 					t.getClass().equals(transporte.getClass()) &&
 					t.getCapacidadMaxima() >= transporte.getCapacidadMaxima() &&
 					t.getCargaMaxima() >= transporte.getCargaMaxima()){
@@ -264,9 +251,8 @@ public class Empresa {
 							//Le otorga al transporte nuevo el mismo destino
 							//que el transporte averiado
 							this.asignarDestino(t.getId(), transporte.getDestino().getUbicacion());
-							t.otorgarCarga (transporte);
+							t.recibirCarga (transporte);
 							//Limpia el destino del transporte anterior
-							transporte.setDestino(null);
 							return true;
 						}
 				}
@@ -285,13 +271,13 @@ public class Empresa {
 		Iterator<String> it = this.transportes.keySet().iterator();
 		while (it.hasNext()) {
 			Transporte t = (Transporte) this.transportes.get(it.next());
-			if (t instanceof Flete && t.enViaje)
+			if (t instanceof Flete && t.isEnViaje())
 				fletes.add((Flete) t);
 			
-			if (t instanceof CamionTrailer && t.enViaje)
+			if (t instanceof CamionTrailer && t.isEnViaje())
 				trailers.add((CamionTrailer) t);
 			
-			if (t instanceof CamionMegaTrailer && t.enViaje)
+			if (t instanceof CamionMegaTrailer && t.isEnViaje())
 				megaTrailers.add((CamionMegaTrailer) t);
 		}
 		
