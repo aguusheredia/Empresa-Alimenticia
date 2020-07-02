@@ -36,6 +36,10 @@ public class Deposito {
 		return this.capacidadMaxima;
 	}
 	
+	public double getCapacidadLibre() {
+		return this.capacidadLibre;
+	}
+	
 	public int getId() {
 		return id;
 	}	
@@ -62,6 +66,14 @@ public class Deposito {
 		//Si no hay lugar en el deposito
 		return false;
 	}
+	
+	public double cargarTransporte (Transporte t, String destino) {
+		double cargado = 0;
+		if (this.paquetes.containsKey(destino)) {
+			cargado += entregarPaquetes(this.paquetes.get(destino), t);
+		}
+		return cargado;
+	}
 
 	//Dado una identificacion de un paquete, revisa si esta alojado en el deposito. De ser asi, lo entrega y lo limpia de su sistema
 	public double entregarPaquetes (ArrayList <Paquete> paquetes, Transporte transporte) {
@@ -84,6 +96,32 @@ public class Deposito {
 		return cargadoTotal;
 	}
 	
+	public int[]  paquetesFrios () {
+		
+		int [] filter = new int [2];
+		//Contador de deposito tercerizados
+		filter [0] = 0;
+		//Contador de deposito propios
+		filter [1] = 0;
+		
+		if (this.refrigeracion){
+			Iterator<String> it =this.paquetes.keySet().iterator();
+			while (it.hasNext()) {
+				ArrayList <Paquete> list = (ArrayList<Paquete>) this.paquetes.get(it.next());
+				for (Paquete paquete: list) {
+					if (paquete.isFrio()) {
+						if (this instanceof DepositoTercerizado)
+							filter[0]++;
+						else
+							filter[1]++;
+					}
+				}
+			}
+		}
+		
+		return filter;
+	}
+	
 	@Override
 	public String toString () {
 		StringBuilder ret = new StringBuilder ("Deposito ");
@@ -101,13 +139,6 @@ public class Deposito {
 		
 		return ret.toString();
 	}
-
-
-	public Map<String, ArrayList<Paquete>> getPaquetes() {
-		return paquetes;
-	}
-
-
 
 }
 

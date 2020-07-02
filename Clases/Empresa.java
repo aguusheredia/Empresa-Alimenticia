@@ -49,11 +49,14 @@ public class Empresa {
 			return nuevo.getId();	
 		}
 		//Si es tercerizado
-		else {
+		else if (!frigorifico){
 			DepositoTercerizado nuevo = new DepositoTercerizado (frigorifico, capacidad, this.depositos.size()+1, 0);
 			this.depositos.add (nuevo);
 			return nuevo.getId();
 		}
+		
+		//Devuelve cero, ya que no asigna costo por tonelada por ser tercerizado con frigorifico
+		return 0;
 		
 	}
 
@@ -176,10 +179,7 @@ public class Empresa {
 			String destino = t.getDestino().getUbicacion();
 		
 			for (Deposito deposito: this.depositos) {
-				Map <String, ArrayList<Paquete>> map = deposito.getPaquetes();
-				if (map.containsKey(destino)) {
-					cargado += deposito.entregarPaquetes(map.get(destino), t);
-				}
+				cargado += deposito.cargarTransporte(t, destino);
 			}
 		}
 		return cargado;
@@ -301,22 +301,8 @@ public class Empresa {
 		int paquetesPropios = 0;
 		int paquetesTercerizados = 0;
 		for (Deposito deposito: this.depositos) {
-			
-			if (deposito.isRefrigeracion()){
-				Map<String, ArrayList<Paquete>> map = deposito.getPaquetes();
-				Iterator<String> it = map.keySet().iterator();
-				while (it.hasNext()) {
-					ArrayList <Paquete> list = (ArrayList<Paquete>) map.get(it.next());
-					for (Paquete paquete: list) {
-						if (paquete.isFrio()) {
-							if (deposito instanceof DepositoTercerizado)
-								paquetesTercerizados++;
-							else
-								paquetesPropios++;
-						}
-					}
-				}
-			}
+			paquetesTercerizados += deposito.paquetesFrios()[0];
+			paquetesPropios += deposito.paquetesFrios()[1];
 		}
 		
 		StringBuilder str = new StringBuilder ();
@@ -350,12 +336,19 @@ public class Empresa {
 		ret.append ("\n");
 		//Impresion de depositos
 		for (Deposito e: depositos) {
-			ret.append ("Depósito " + e.getId());
+			String tipo;
+			
+			if (e instanceof DepositoTercerizado)
+				tipo = "Deposito Tercerizado";
+			else
+				tipo = "Deposito propio";
+			
+			ret.append ("Depósito " + e.getId() + "  " + tipo);
 			if (e.isRefrigeracion())
 				ret.append("  Con refrigeración");
 			else
 				ret.append("  Sin refrigeración");
-			ret.append("  Capacidad: " + e.getCapacidad() + " L");
+			ret.append("  Capacidad libre: " + e.getCapacidadLibre() + " L");
 			ret.append ("\n");
 		}
 		ret.append ("\n");
@@ -366,8 +359,13 @@ public class Empresa {
 		ret.append ("\n");
 		Iterator<String> it = this.transportes.keySet().iterator();
 		while (it.hasNext()) {
-			String key = (String) it.next();
-			ret.append ("Vehiculo " + this.transportes.get(key).getId() + "\n");
+			Transporte transporte = this.transportes.get(it.next());
+			//Paso la clase del transporte a cadena
+			String tipo = String.valueOf(transporte.getClass());
+			//Eliminacion de la palabra class
+			tipo = tipo.substring(6, tipo.length());
+			ret.append ("Vehiculo " + transporte.getId() +
+					" " + tipo + "\n");
 		}
 		return ret.toString();
 	}

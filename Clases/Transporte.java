@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Iterator;
 
 public abstract class  Transporte {
 
@@ -168,20 +167,23 @@ public abstract class  Transporte {
 			return 0;
 	}
 	
-	public void recibirCarga(Transporte t) {
+	public void recibirCarga(Transporte t) throws Exception {
 		
 		//Le otorga los paquetes del transporte averiado al 
 		//transporte nuevo
 		this.paquetes.addAll(t.paquetes);
 		
-		//Vacia la carga del transporte averiado
-		t.vaciarCarga();
+		double pesoOcupado = t.cargaMaxima - t.cargaLibre;
+		double capacidadOcupada = t.capacidadMaxima - t.capacidadLibre;
 		
-		//Blanquea su destino
-		t.blanquearDestino();
+		this.cargaLibre = this.cargaMaxima - pesoOcupado;
+		this.capacidadLibre = this.capacidadMaxima - capacidadOcupada;
 		
 		//Le otorga al nuevo transporte el costo del transporte anterior
 		this.costoTotal = t.getCostoTotal();
+		
+		//Vacia la carga del transporte averiado
+		t.finalizarViaje();
 		
 	}
 	
@@ -228,7 +230,6 @@ public abstract class  Transporte {
 							//Si encuentra un paquete igual, lo elimina de la lista
 							if (this.paquetes.get(i).equals(list.get(j))) {
 								list.remove(j);
-								System.out.println(list.size());
 								j = list.size();
 							}
 								
