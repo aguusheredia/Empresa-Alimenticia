@@ -6,7 +6,7 @@ import java.util.Map;
 public class Deposito {
 
 	private int id;
-	private Map<String, ArrayList<Paquete>> paquetes = new HashMap <String, ArrayList<Paquete>>();
+	private Map<String, ArrayList<Paquete>> paquetes;
 	private boolean refrigeracion;
 	private double capacidadMaxima;
 	private double capacidadLibre;
@@ -15,16 +15,15 @@ public class Deposito {
 	//La capacidad maxima debe ser mayor a cero
 	
 	public Deposito(boolean refrigeracion, double capacidadMaxima , int id) throws Exception {
-		this.refrigeracion = refrigeracion;
-		
-		if (capacidadMaxima > 0) {
-			this.capacidadMaxima = capacidadMaxima;
-			this.capacidadLibre = capacidadMaxima;
-			this.id = id;
-		}
 		
 		if (capacidadMaxima <= 0) 
 			throw new Exception ("La capacidad maxima debe ser mayor a cero");
+		
+		paquetes = new HashMap <String, ArrayList<Paquete>>();
+		this.refrigeracion = refrigeracion;
+		this.capacidadMaxima = capacidadMaxima;
+		this.capacidadLibre = capacidadMaxima;
+		this.id = id;
 	}
 
 
@@ -67,42 +66,44 @@ public class Deposito {
 		return false;
 	}
 	
-	public double cargarTransporte (Transporte t, String destino) {
-		double cargado = 0;
-		if (this.paquetes.containsKey(destino)) {
-			cargado += entregarPaquetes(this.paquetes.get(destino), t);
-		}
-		return cargado;
-	}
-
-	//Dado una identificacion de un paquete, revisa si esta alojado en el deposito. De ser asi, lo entrega y lo limpia de su sistema
-	public double entregarPaquetes (ArrayList <Paquete> paquetes, Transporte transporte) {
+	//Al cargar el transporte devuelve el volumen y el peso de lo cargado
+	public double[] cargarTransporte (Transporte transporte, String destino) {
 		
-		double cargadoTotal = 0;
-		double cargadoPaquete;
+		double [] ret = new double [2];
+		ret[0] = 0;
+		ret [0] = 0;
 		
-		Iterator<Paquete> it = paquetes.iterator();
+		if (!this.paquetes.containsKey(destino)) 
+			return ret;		
+		
+		double volumenTotal = 0;
+		double volumenPaquete;
+		double peso = 0;
+		
+		ArrayList <Paquete> p = this.paquetes.get(destino);
+		Iterator<Paquete> it = p.iterator();
 		while (it.hasNext()) {
-			Paquete p = (Paquete) it.next();
-			cargadoPaquete = transporte.cargar(p, this);
+			Paquete paquete = (Paquete) it.next();
+			volumenPaquete = transporte.cargar(paquete, this);
 			
-			if (cargadoPaquete > 0) {
-				this.capacidadLibre += p.getVolumen();
-				cargadoTotal += cargadoPaquete;
+			if (volumenPaquete > 0) {
+				this.capacidadLibre += paquete.getVolumen();
+				volumenTotal += volumenPaquete;
+				peso += paquete.getPeso();
 				it.remove();
 			}
 		}
 		
-		return cargadoTotal;
+		ret [0] = volumenTotal;
+		ret [1] = peso;
+		return ret;
 	}
+
 	
-	public int[]  paquetesFrios () {
+	//Devuelve la cantidad de paquetes frios que hay en el deposito
+	public int paquetesFrios () {
 		
-		int [] filter = new int [2];
-		//Contador de deposito tercerizados
-		filter [0] = 0;
-		//Contador de deposito propios
-		filter [1] = 0;
+		int cont = 0;
 		
 		if (this.refrigeracion){
 			Iterator<String> it =this.paquetes.keySet().iterator();
@@ -110,30 +111,32 @@ public class Deposito {
 				ArrayList <Paquete> list = (ArrayList<Paquete>) this.paquetes.get(it.next());
 				for (Paquete paquete: list) {
 					if (paquete.isFrio()) {
-						if (this instanceof DepositoTercerizado)
-							filter[0]++;
-						else
-							filter[1]++;
+						cont ++;
 					}
 				}
 			}
 		}
 		
-		return filter;
+		return cont;
 	}
 	
 	@Override
 	public String toString () {
 		StringBuilder ret = new StringBuilder ("Deposito ");
 		ret.append (this.id + "\n");
-		ret.append ("Capacidad maxima " +this.capacidadMaxima + "L");
+		ret.append ("Capacidad maxima ");
+		ret.append (this.capacidadMaxima);
+		ret.append("L");
 		ret.append ("\n");
 		ret.append ("\n");
 		
 		Iterator<String> it = this.paquetes.keySet().iterator();
 		while (it.hasNext()) {
 			String key = (String) it.next();
-			ret.append("Paquetes con destino a " + key + ": " + this.paquetes.get(key).size());
+			ret.append("Paquetes con destino a ");
+			ret.append(key);
+			ret.append(": ");
+			ret.append(this.paquetes.get(key).size());
 			ret.append ("\n");
 		}
 		

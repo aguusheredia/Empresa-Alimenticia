@@ -9,20 +9,26 @@ public class CamionTrailer extends Transporte  {
 		
 		super (id,cargaMaxima, capacidadMaxima, costoKm, refrigeracion);
 		
-		if (seguroDeCarga > 0)
-			this.seguroDeCarga = seguroDeCarga;
-		
-		//While para cumplir el IREP
+		//Excepcion para cumplir el IREP
 		if (seguroDeCarga <= 0) 
 			throw new Exception ("El seguro de carga debe ser mayor a cero");
+		
+		this.seguroDeCarga = seguroDeCarga;
 	}
 	
-	
-	public void calcularCostoTotal() {
+	@Override
+	public void asignarDestino (Destino destino) throws Exception {
+		if (destino.getDistancia() > 500)
+			throw new Exception ("Los camiones trailer solo hacer viajes menores a 500 KM");
 		
-		if (getDestino() != null)
-			setCostoTotal(costoKms() + this.seguroDeCarga);
-		else 
-			System.out.print("El flete no tiene un destino asignado");
+		super.asignarDestino(destino);
+	}
+	
+	@Override
+	public double calcularCostoTotal() throws Exception {
+		
+			double cargado = super.calcularCostoTotal() + this.seguroDeCarga;
+			this.setCostoTotal(cargado);
+			return cargado;
 	}
 }

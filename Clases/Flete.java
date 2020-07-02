@@ -5,32 +5,28 @@ public class Flete extends Transporte {
 	
 	//El costo fijo por pasajero debe ser mayor a cero
 	
-	public Flete (String id,double cargaMaxima, double capacidadMaxima, double costoKm,
+	public Flete (String id,double cargaMaxima, double capacidadMaxima, double costoKm, int cantPasajeros,
 					double costoFijoPasajero) throws Exception{
 		
 		super (id,cargaMaxima, capacidadMaxima, costoKm, false);
 			
-		if (costoFijoPasajero > 0)
-			this.costoFijoPasajero = costoFijoPasajero;
-		
+		//Excepciones para controlar el IREP
 		if (costoFijoPasajero <= 0) 
 			throw new Exception ("El costo fijo por pasajero debe ser mayor a cero");
-	}
-	
-	public void setCantidadPasajeros (int n){
-		if (n > 0)
-			this.cantidadPasajeros = n;
 		
-		else
-			System.out.println("La cantidad de pasajero debe ser mayor a cero. No se realizo el cambio");
+		if (cantPasajeros <= 0) 
+			throw new Exception ("La cantidad de pasajeros debe ser mayor a cero");
+		
+		this.costoFijoPasajero = costoFijoPasajero;
+		this.cantidadPasajeros = cantPasajeros;
 	}
 
-	public void calcularCostoTotal() {
+	@Override
+	public double calcularCostoTotal() throws Exception {
 		
-		if (getDestino() != null)
-			setCostoTotal(costoKms() + this.costoFijoPasajero * this.cantidadPasajeros);
-		else 
-			System.out.print("El flete no tiene un destino asignado");
+		double cargado = super.calcularCostoTotal() + (this.costoFijoPasajero * this.cantidadPasajeros);
+		this.setCostoTotal(cargado);
+		return cargado;
 	}
 
 	

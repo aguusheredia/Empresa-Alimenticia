@@ -9,13 +9,6 @@ public class Paquete {
 	//El peso y el volumen deben ser mayor a cero
 	
 	public Paquete(String destino, double volumen, double peso, boolean frio) throws Exception {
-		this.frio = frio;
-
-		if (destino.length() > 0 && volumen > 0 && peso > 0) {
-			this.destino = destino;
-			this.volumen = volumen;
-			this.peso = peso;
-		}
 		
 		//Excepsiones para cumplir el IREP
 		if (destino.length() == 0) 
@@ -26,6 +19,11 @@ public class Paquete {
 		
 		if (volumen <= 0) 
 			throw new Exception ("El volumen debe ser mayor a cero");
+		
+		this.frio = frio;
+		this.destino = destino;
+		this.volumen = volumen;
+		this.peso = peso;
 	}
 
 
@@ -45,14 +43,17 @@ public class Paquete {
 		return frio;
 	}
 
-	public boolean equals (Paquete p) {
+	@Override
+	public boolean equals (Object obj) {
 		
-		if (this.destino.equals (p.getDestino()) && 
-				this.volumen == p.getVolumen() &&
-				this.peso == p.getPeso() && 
-				this.frio == p.isFrio())
-			return true;
-		
+		if (obj instanceof Paquete) {
+			Paquete p = (Paquete) obj;
+			if (this.destino.equals (p.getDestino()) && 
+					this.volumen == p.getVolumen() &&
+					this.peso == p.getPeso() && 
+					this.frio == p.isFrio())
+				return true;
+		}
 		return false;
 	}
 	
@@ -61,8 +62,14 @@ public class Paquete {
 	public String toString () {
 		StringBuilder ret = new StringBuilder ("Paquete");
 		ret.append ("\n");
-		ret.append ("Destino " + this.destino + "\n");
-		ret.append ("Peso " + this.peso + " KG  Volumen " + this.volumen + " L");
+		ret.append ("Destino ");
+		ret.append(this.destino);
+		ret.append("\n");
+		ret.append ("Peso ");
+		ret.append(this.peso);
+		ret.append(" KG  Volumen ");
+		ret.append( this.volumen);
+		ret.append(" L");
 		ret.append ("\n");
 		if (isFrio())
 			ret.append("Requiere frio");

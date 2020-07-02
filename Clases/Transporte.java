@@ -1,6 +1,7 @@
 import java.util.ArrayList;
+import java.util.Iterator;
 
-public abstract class  Transporte {
+public class  Transporte {
 
 	private String id;
 	private double cargaMaxima;
@@ -9,7 +10,7 @@ public abstract class  Transporte {
 	private double capacidadLibre;
 	private double costoKm;
 	private boolean refrigeracion;
-	private ArrayList <Paquete> paquetes = new ArrayList <Paquete>();
+	private ArrayList <Paquete> paquetes;
 	private Destino destino;
 	private boolean enViaje;
 	private double costoTotal;
@@ -18,18 +19,6 @@ public abstract class  Transporte {
 	//carga maxima, capacidad maxima y costo por Km deben ser mayor a cero
 	
 	public Transporte (String id, double cargaMaxima, double capacidadMaxima, double costoKm, boolean refrigeracion) throws Exception{
-		
-		this.refrigeracion = refrigeracion;
-		this.costoTotal=0;
-		if (Verificacion.verificarPatente(id) && cargaMaxima > 0 && capacidadMaxima > 0 && costoKm > 0) {
-			this.id = id;
-			this.cargaMaxima = cargaMaxima;
-			this.cargaLibre = cargaMaxima;
-			this.capacidadMaxima = capacidadMaxima;
-			this.capacidadLibre = capacidadMaxima;
-			this.costoKm = costoKm;
-			
-		}
 		
 		//Excepciones para controlar el IREP
 		if (!Verificacion.verificarPatente(id)) 
@@ -44,6 +33,16 @@ public abstract class  Transporte {
 		
 		if (costoKm <= 0) 
 			throw new Exception ("El costo por Km debe ser mayor a cero");
+		
+		paquetes = new ArrayList <Paquete>();
+		this.refrigeracion = refrigeracion;
+		this.costoTotal=0;
+		this.id = id;
+		this.cargaMaxima = cargaMaxima;
+		this.cargaLibre = cargaMaxima;
+		this.capacidadMaxima = capacidadMaxima;
+		this.capacidadLibre = capacidadMaxima;
+		this.costoKm = costoKm;
 	}
 	
 	public double getCargaMaxima() {
@@ -84,18 +83,8 @@ public abstract class  Transporte {
 	
 	public void asignarDestino (Destino destino) throws Exception {
 		
-		//Excepciones para controlar kilometraje con tipo de transporte
-		if (this instanceof CamionTrailer && destino.getDistancia() > 500)
-			throw new Exception ("Los camiones trailer solo hacer viajes menores a 500 KM");
-		if (this instanceof CamionMegaTrailer && destino.getDistancia() <= 500)
-			throw new Exception ("Los camiones mega trailer solo hacer viajes mayores a 500 KM");
-		
 		this.destino = destino;
 		calcularCostoTotal();
-	}
-	
-	private void blanquearDestino () {
-		this.destino = null;
 	}
 
 	//Dado un paquete, revisa sus caraceristicas y de ser posible lo carga
@@ -114,16 +103,21 @@ public abstract class  Transporte {
 						cargaLibre -= paquete.getPeso();
 						capacidadLibre -= paquete.getVolumen();
 						cargado += paquete.getVolumen();
-						if (d instanceof DepositoTercerizado && d.isRefrigeracion()) 
-							//Agrega un proporcional por deposito tercerizado
-							this.costoTotal += 
-							(paquete.getPeso() * ((DepositoTercerizado) d).getPrecioTonelada() / 1000);
 				}
 			}
 		} catch (NullPointerException e) {
 		   System.out.print ("El transporte no tiene un destino asignado");
 		}
 		return cargado;
+	}
+	
+	//Suma un costo que le otorga la empresa
+	public void sumarCosto (double costoExtra) throws Exception {
+		
+		if (costoExtra <= 0)
+			throw new Exception ("El costo a sumar debe ser mayor a cero");
+		
+		this.costoTotal += costoExtra;
 	}
 	
 	//Inicia viaje, el transporte debe estar cargado y tener un viaje previamente asignado 
@@ -155,16 +149,13 @@ public abstract class  Transporte {
 	public void vaciarCarga (){
 		paquetes.clear();
 	}
-	
-	//Dependiendo el tipo de transporte, calcula el costo del viaje
-	public abstract void calcularCostoTotal();
 
-	public double costoKms (){
+	public double calcularCostoTotal () throws Exception{
 		
 		if (this.destino != null)
 			return this.destino.getDistancia() * this.costoKm;
-		else
-			return 0;
+		
+		throw new Exception ("El transporte no tiene destino asignado");
 	}
 	
 	public void recibirCarga(Transporte t) throws Exception {
@@ -215,7 +206,7 @@ public abstract class  Transporte {
 			Transporte o = (Transporte) obj;
 			
 			//Verifica que tenga las mismas caracteristicas
-			if (o.getDestino().getUbicacion().equals(this.getDestino().getUbicacion())
+			if (o.getDestino().equals(this.getDestino())
 					&& o.getClass().equals(this.getClass())) {
 				
 				//Crea un nuevo array para no modificar el original
@@ -225,16 +216,28 @@ public abstract class  Transporte {
 
 				//Verifica carga
 				if (o.cantPaquetes() == this.cantPaquetes()) {
-					for (int i = 0 ; i < this.cantPaquetes() ; i++) {
-						for (int j = 0; j < list.size(); j++) {
-							//Si encuentra un paquete igual, lo elimina de la lista
-							if (this.paquetes.get(i).equals(list.get(j))) {
-								list.remove(j);
-								j = list.size();
+					
+					Iterator <Paquete> it =this.paquetes.iterator();
+					//Si no encuentra un paquete, frenará todo el ciclo
+					boolean find = true;
+					
+					while (it.hasNext() && find) {
+						Paquete p1 = it.next();
+						find = false;
+						
+						Iterator <Paquete> kit = list.iterator();
+						//Variable para para ejecución
+						boolean stop = false;
+						while (kit.hasNext() && !stop) {
+							Paquete p2 = kit.next();
+							
+							//Si encuentra el paquete, lo elimina de la lista y para la ejecucion
+							if (p1.equals(p2)) {
+								kit.remove();
+								stop = true;
+								find = true;
 							}
-								
 						}
-
 					}
 					//Si se eliminan todos los elementos de la lista
 					//Todos los elementos se encontraban en la otra carga

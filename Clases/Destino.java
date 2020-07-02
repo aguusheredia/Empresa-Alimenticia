@@ -1,6 +1,5 @@
 public class Destino {
 
-	private int id;
 	private String ubicacion;
 	private int distancia;
 	
@@ -9,17 +8,15 @@ public class Destino {
 	
 	public Destino (String ubicacion, int distancia) throws Exception{
 		
-		if (ubicacion.length() > 0 && distancia >0) {
-			this.ubicacion = ubicacion;
-			this.distancia = distancia;
-		}
-		
 		//Excepciones para cumplir el IREP
 		if (ubicacion.length() == 0) 
 			throw new Exception ("El destino no debe ser vacio");
 		
 		if (distancia <= 0)
 			throw new Exception ("La distancia debe ser mayor a cero");
+		
+		this.ubicacion = ubicacion;
+		this.distancia = distancia;
 	}
 
 	public String getUbicacion() {
@@ -29,18 +26,20 @@ public class Destino {
 	public int getDistancia() {
 		return distancia;
 	}
-
-	public int getId() {
-		return id;
+	
+	@Override
+	public boolean equals (Object obj) {
+		if (obj instanceof Destino) {
+			Destino d = (Destino) obj;
+			if (this.ubicacion.equals(d.ubicacion) && this.distancia == d.distancia)
+				return true;
+		}
+		return false;
 	}
-
 	
 	@Override
 	public String toString () {
-		StringBuilder ret = new StringBuilder ("Destino: ");
-		ret.append(this.ubicacion + ("\n"));
-		ret.append("Km: " + this.distancia);
-		return ret.toString();
+		return "Destino: " + this.ubicacion + "\n" + "Km: " + this.distancia;
 	}
 	
 	

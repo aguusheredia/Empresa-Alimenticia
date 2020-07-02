@@ -7,19 +7,14 @@ public class Empresa {
 
 	private String nombre;
 	private String cuit;
-	private Map <String, Transporte> transportes = new HashMap<String, Transporte>();
-	private ArrayList <Deposito> depositos = new ArrayList <Deposito>();
-	private	Map <String, Destino> destinos = new HashMap <String, Destino>();
+	private Map <String, Transporte> transportes;
+	private ArrayList <Deposito> depositos;
+	private	Map <String, Destino> destinos;
 	
 	//El nombre debe ser una cadena no vacia
 	//El cuit debe contener 11 digitos numericos
 	
 	public Empresa (String cuit,String nombre) throws Exception {
-		
-		if (Verificacion.verificarCuit(cuit) && nombre.length()>0) {
-			this.nombre = nombre;
-			this.cuit = cuit;
-		}
 		
 		//Se encarga de cumplir el IREP
 		if (nombre.length() == 0)
@@ -27,6 +22,12 @@ public class Empresa {
 		
 		if (!Verificacion.verificarCuit(cuit)) 
 			throw new Exception ("El cuit debe tener 11 numeros");
+		
+		transportes = new HashMap<String, Transporte>();
+		depositos = new ArrayList <Deposito>();
+		destinos = new HashMap <String, Destino>();
+		this.nombre = nombre;
+		this.cuit = cuit;
 	}
 	
 	public Transporte darTransporte (String id) throws Exception {
@@ -122,8 +123,7 @@ public class Empresa {
 										int acomp, double costoPorAcom) throws Exception {
 		
 		if (!transportes.containsKey(idTransporte)) {
-			Flete flete = new Flete (idTransporte,cargaMax,capacidad,costoKm,costoPorAcom);
-			flete.setCantidadPasajeros (acomp + 1);
+			Flete flete = new Flete (idTransporte,cargaMax,capacidad,costoKm, acomp, costoPorAcom);
 			transportes.put(idTransporte, flete);
 		}
 		
@@ -169,17 +169,59 @@ public class Empresa {
 		else
 			throw new Exception ("El transporte " + idTransporte + " no se encuentra en la empresa");
 	}
+	
+	//Devuelve la cantidad de paquetes de un transporte
+	public int cantPaquetesEnTransporte (String idTransporte) throws Exception {
+		if (!this.transportes.containsKey(idTransporte))
+			throw new Exception ("El transporte no se encuentra en la empresa");
+		
+		return this.transportes.get(idTransporte).cantPaquetes();
+	}
+	
+	//Devuelve el destino de un transporte
+	public Destino destinoDeTransporte (String idTransporte) throws Exception {
+		if (!this.transportes.containsKey(idTransporte))
+			throw new Exception ("El transporte no se encuentra en la empresa");
+		
+		return this.transportes.get(idTransporte).getDestino();
+		
+	}
 
+	//Le indica a un transporte que sume un valor a su costo total
+	public void sumarCosto (String idTransporte, double costoExtra) throws Exception {
+		
+		if (!this.transportes.containsKey(idTransporte))
+			throw new Exception ("El transporte no se encuentra en la empresa");
+		
+		this.transportes.get(idTransporte).sumarCosto (costoExtra);
+	}
+	
+	//Calcula el costo que tiene que sumar un transporte
+	public double calcularCostoPeso (double peso, DepositoTercerizado deposito) {
+		return (peso * deposito.getPrecioTonelada()) / 1000;
+	}
+	
 	//Dado un transporte, le asigna la funcion de cargar paquetes correspondientes
-	public double cargarTransporte (String idTransporte) {
+	public double cargarTransporte (String idTransporte) throws Exception {
 		
 		double cargado = 0;
+		double costoExtra = 0;
+		double peso;
 		if (this.transportes.containsKey(idTransporte)) {
 			Transporte t = this.transportes.get(idTransporte);
 			String destino = t.getDestino().getUbicacion();
 		
+			//Recorre todos los depositos para cargar los paquetes
 			for (Deposito deposito: this.depositos) {
-				cargado += deposito.cargarTransporte(t, destino);
+				double [] volumenPeso = deposito.cargarTransporte(t, destino); 
+				cargado += volumenPeso [0];
+				if (deposito instanceof DepositoTercerizado && deposito.isRefrigeracion()) {
+					peso = volumenPeso[1];
+					if (peso > 0) {
+						costoExtra = calcularCostoPeso (peso, (DepositoTercerizado)deposito);
+						sumarCosto (idTransporte, costoExtra);
+					}
+				}
 			}
 		}
 		return cargado;
@@ -198,11 +240,11 @@ public class Empresa {
 	}
 	
 	//Dado un transporte, le indica que le otorgue el costo total por el viaje que tiene asignado
-	public double obtenerCostoViaje (String idTransporte) {
+	public double obtenerCostoViaje (String idTransporte) throws Exception {
 		if (transportes.containsKey (idTransporte))
 			return this.transportes.get(idTransporte).getCostoTotal();
 		
-		return 0;
+		throw new Exception ("El transporte no se encuentra en la empresa");
 	}
 	
 	//Dado un transporte, busca en la lista de transportes otro que tenga las mismas caracteristicas
@@ -272,13 +314,13 @@ public class Empresa {
 		while (it.hasNext()) {
 			Transporte t = (Transporte) this.transportes.get(it.next());
 			if (t instanceof Flete && t.isEnViaje())
-				fletes.add((Flete) t);
+				fletes.add(t);
 			
 			if (t instanceof CamionTrailer && t.isEnViaje())
-				trailers.add((CamionTrailer) t);
+				trailers.add(t);
 			
 			if (t instanceof CamionMegaTrailer && t.isEnViaje())
-				megaTrailers.add((CamionMegaTrailer) t);
+				megaTrailers.add(t);
 		}
 		
 		str.append("Transportes en viaje: " + (fletes.size() + trailers.size() + megaTrailers.size())  +"\n");
@@ -301,8 +343,10 @@ public class Empresa {
 		int paquetesPropios = 0;
 		int paquetesTercerizados = 0;
 		for (Deposito deposito: this.depositos) {
-			paquetesTercerizados += deposito.paquetesFrios()[0];
-			paquetesPropios += deposito.paquetesFrios()[1];
+			if (deposito instanceof DepositoTercerizado)
+				paquetesTercerizados += deposito.paquetesFrios();
+			else
+				paquetesPropios += deposito.paquetesFrios();
 		}
 		
 		StringBuilder str = new StringBuilder ();
@@ -313,7 +357,7 @@ public class Empresa {
 		return str.toString();
 	}
 
-	public String enViajeYFrios () {
+	public String toStringenViajeYFrios () {
 		StringBuilder str = new StringBuilder();
 		str.append(this.TransportesEnviaje());
 		str.append("\n");
@@ -332,7 +376,8 @@ public class Empresa {
 		ret.append (this.cuit);
 		ret.append ("\n");
 		ret.append ("\n");
-		ret.append ("Depositos: " + this.depositos.size());
+		ret.append ("Depositos: ");
+		ret.append(this.depositos.size());
 		ret.append ("\n");
 		//Impresion de depositos
 		for (Deposito e: depositos) {
@@ -348,14 +393,17 @@ public class Empresa {
 				ret.append("  Con refrigeración");
 			else
 				ret.append("  Sin refrigeración");
-			ret.append("  Capacidad libre: " + e.getCapacidadLibre() + " L");
+			ret.append("  Capacidad libre: ");
+			ret.append(e.getCapacidadLibre());
+			ret.append(" L");
 			ret.append ("\n");
 		}
 		ret.append ("\n");
 		ret.append ("\n");
 		
 		//Impresion de transportes
-		ret.append ("Transportes: " + this.transportes.size());
+		ret.append ("Transportes: ");
+		ret.append(this.transportes.size());
 		ret.append ("\n");
 		Iterator<String> it = this.transportes.keySet().iterator();
 		while (it.hasNext()) {
@@ -364,9 +412,16 @@ public class Empresa {
 			String tipo = String.valueOf(transporte.getClass());
 			//Eliminacion de la palabra class
 			tipo = tipo.substring(6, tipo.length());
-			ret.append ("Vehiculo " + transporte.getId() +
-					" " + tipo + "\n");
+			ret.append ("Vehiculo ");
+			ret.append(transporte.getId());
+			ret.append(" " );
+			ret.append(tipo);
+			ret.append("\n");
 		}
+		
+		ret.append("\n");
+		ret.append(toStringenViajeYFrios());
+		ret.append("\n");
 		return ret.toString();
 	}
 	
