@@ -17,6 +17,9 @@ public class Empresa {
 	public Empresa (String cuit,String nombre) throws Exception {
 		
 		//Se encarga de cumplir el IREP
+		if (nombre == null)
+			throw new Exception ("La empresa debe tener un nombre");
+			
 		if (nombre.length() == 0)
 			throw new Exception ("La empresa debe tener un nombre");
 		
@@ -29,14 +32,6 @@ public class Empresa {
 		this.nombre = nombre;
 		this.cuit = cuit;
 	}
-	
-	public Transporte darTransporte (String id) throws Exception {
-		if (!this.transportes.containsKey(id))
-			throw new Exception ("El transporte no esta en la empresa");
-		
-		return this.transportes.get(id);
-	}
-
 	
 	//Dado las caracteriticas, crea y asigna un deposito nuevos a la empresa
 	//Dicho deposito es propio o tercerizado sin frigorifico
@@ -93,7 +88,7 @@ public class Empresa {
 										 acomp, costoPorAcom);
 	}
 	
-	//Dado las caracterÃ­sticas de un camion trailer, lo crea y lo suma a la empresa
+	//Dado las caracteristicas de un camion trailer, lo crea y lo suma a la empresa
 	public void agregarTrailer (String idTransporte, double cargaMax, double capacidad,
 											boolean frigorifico, double costoKm, double segCarga) throws Exception {
 		
@@ -156,8 +151,6 @@ public class Empresa {
 			//Asignacion de transporte en una variable para evitar la busqueda del mismo
 			//en cada interacción
 			Transporte transporte = this.transportes.get(idTransporte);
-			if (transporte.cantPaquetes() > 0)
-				throw new Exception ("El transporte ya esta cargado");
 			
 			if (destinos.containsKey(destino)) {
 				Destino d = destinos.get(destino);
@@ -187,42 +180,22 @@ public class Empresa {
 		
 	}
 
-	//Le indica a un transporte que sume un valor a su costo total
-	public void sumarCosto (String idTransporte, double costoExtra) throws Exception {
-		
-		if (!this.transportes.containsKey(idTransporte))
-			throw new Exception ("El transporte no se encuentra en la empresa");
-		
-		this.transportes.get(idTransporte).sumarCosto (costoExtra);
-	}
-	
-	//Calcula el costo que tiene que sumar un transporte
-	public double calcularCostoPeso (double peso, DepositoTercerizado deposito) {
-		return (peso * deposito.getPrecioTonelada()) / 1000;
-	}
 	
 	//Dado un transporte, le asigna la funcion de cargar paquetes correspondientes
 	public double cargarTransporte (String idTransporte) throws Exception {
 		
 		double cargado = 0;
-		double costoExtra = 0;
-		double peso;
-		if (this.transportes.containsKey(idTransporte)) {
-			Transporte t = this.transportes.get(idTransporte);
-			String destino = t.getDestino().getUbicacion();
 		
+		//Verifica si el transporte se encuentra en la empresa
+		if (this.transportes.containsKey(idTransporte)) {
+			Transporte transporte = this.transportes.get(idTransporte);
+			String destino = transporte.getDestino().getUbicacion();
+
 			//Recorre todos los depositos para cargar los paquetes
 			for (Deposito deposito: this.depositos) {
-				double [] volumenPeso = deposito.cargarTransporte(t, destino); 
-				cargado += volumenPeso [0];
-				if (deposito instanceof DepositoTercerizado && deposito.isRefrigeracion()) {
-					peso = volumenPeso[1];
-					if (peso > 0) {
-						costoExtra = calcularCostoPeso (peso, (DepositoTercerizado)deposito);
-						sumarCosto (idTransporte, costoExtra);
-					}
-				}
+				deposito.cargarTransporte(transporte, destino);
 			}
+			cargado = transporte.volumenCargado();
 		}
 		return cargado;
 	}
@@ -242,7 +215,7 @@ public class Empresa {
 	//Dado un transporte, le indica que le otorgue el costo total por el viaje que tiene asignado
 	public double obtenerCostoViaje (String idTransporte) throws Exception {
 		if (transportes.containsKey (idTransporte))
-			return this.transportes.get(idTransporte).getCostoTotal();
+			return this.transportes.get(idTransporte).darCostoTotal();
 		
 		throw new Exception ("El transporte no se encuentra en la empresa");
 	}
@@ -277,26 +250,14 @@ public class Empresa {
 			
 			Transporte transporte = this.transportes.get(idTransporte);
 			
+			//Recorre todos los transportes
 			for (String id: this.transportes.keySet()) {
 				
+				//Si el transporte es optimo para el reemplazo, lo realiza
 				Transporte t = this.transportes.get(id);
-				//Corrobora que el transporte que se envia este vacío, sin destino
-				//Y que tenga las características necesarias para intercambiar la carga
-				if (t.getDestino() == null &&
-					t.cantPaquetes() == 0 &&
-					t.getClass().equals(transporte.getClass()) &&
-					t.getCapacidadMaxima() >= transporte.getCapacidadMaxima() &&
-					t.getCargaMaxima() >= transporte.getCargaMaxima()){
-					
-					if ((t.isRefrigeracion() && transporte.isRefrigeracion()) ||
-						(!t.isRefrigeracion() && !transporte.isRefrigeracion())){
-							//Le otorga al transporte nuevo el mismo destino
-							//que el transporte averiado
-							this.asignarDestino(t.getId(), transporte.getDestino().getUbicacion());
-							t.recibirCarga (transporte);
-							//Limpia el destino del transporte anterior
-							return true;
-						}
+				if (transporte.reemplazablePor(t)) {
+					transporte.reemplazarPor(t);
+					return true;
 				}
 			}
 		}
@@ -323,17 +284,26 @@ public class Empresa {
 				megaTrailers.add(t);
 		}
 		
-		str.append("Transportes en viaje: " + (fletes.size() + trailers.size() + megaTrailers.size())  +"\n");
-		if (fletes.size() + trailers.size() + megaTrailers.size() > 0){
-			str.append("Fletes: " + fletes.size() + "\n");
+		str.append("Transportes en viaje: ");
+		int transporteEnViaje = fletes.size() + trailers.size() + megaTrailers.size();
+		str.append(transporteEnViaje);
+		str.append("\n");
+		if (transporteEnViaje > 0){
+			str.append("Fletes: ");
+			str.append(fletes.size());
+			str.append("\n");
 			str.append(Transporte.transportesList(fletes));
 			str.append("\n");
 			
-			str.append("Camiones Trailers: " + trailers.size() + "\n");
+			str.append("Camiones Trailers: ");
+			str.append(trailers.size());
+			str.append("\n");
 			str.append(Transporte.transportesList(trailers));
 			str.append("\n");
 			
-			str.append("Camiones mega Trailers: " + megaTrailers.size() + "\n");
+			str.append("Camiones mega Trailers: ");
+			str.append(megaTrailers.size());
+			str.append("\n");
 			str.append(Transporte.transportesList(megaTrailers));
 		}
 		return str.toString();
@@ -343,17 +313,24 @@ public class Empresa {
 		int paquetesPropios = 0;
 		int paquetesTercerizados = 0;
 		for (Deposito deposito: this.depositos) {
-			if (deposito instanceof DepositoTercerizado)
-				paquetesTercerizados += deposito.paquetesFrios();
-			else
-				paquetesPropios += deposito.paquetesFrios();
+			if (deposito.isRefrigeracion()) {
+				if (deposito instanceof DepositoTercerizado)
+					paquetesTercerizados += deposito.paquetesFrios();
+				else
+					paquetesPropios += deposito.paquetesFrios();
+			}
 		}
 		
 		StringBuilder str = new StringBuilder ();
-		str.append("Paquetes que necesitan frio: " + (paquetesPropios + paquetesTercerizados));
+		str.append("Paquetes que necesitan frio: ");
+		int paquetesFrios = paquetesPropios + paquetesTercerizados;
+		str.append(paquetesFrios);
 		str.append("\n");
-		str.append("Paquetes en depositos propios: " + paquetesPropios + "\n");
-		str.append("Paquetes en depositos Tercerizados: " + paquetesTercerizados);
+		str.append("Paquetes en depositos propios: ");
+		str.append(paquetesPropios);
+		str.append("\n");
+		str.append("Paquetes en depositos Tercerizados: ");
+		str.append(paquetesTercerizados);
 		return str.toString();
 	}
 
@@ -369,16 +346,16 @@ public class Empresa {
 	
 	@Override
 	public String toString() {
-		StringBuilder ret = new StringBuilder ("Nombre: ");
-		ret.append (this.nombre);
-		ret.append ("\n");
-		ret.append ("Cuit: ");
-		ret.append (this.cuit);
-		ret.append ("\n");
-		ret.append ("\n");
-		ret.append ("Depositos: ");
-		ret.append(this.depositos.size());
-		ret.append ("\n");
+		StringBuilder str = new StringBuilder ("Nombre: ");
+		str.append (this.nombre);
+		str.append ("\n");
+		str.append ("Cuit: ");
+		str.append (this.cuit);
+		str.append ("\n");
+		str.append ("\n");
+		str.append ("Depositos: ");
+		str.append(this.depositos.size());
+		str.append ("\n");
 		//Impresion de depositos
 		for (Deposito e: depositos) {
 			String tipo;
@@ -388,23 +365,26 @@ public class Empresa {
 			else
 				tipo = "Deposito propio";
 			
-			ret.append ("Depósito " + e.getId() + "  " + tipo);
+			str.append ("Depósito ");
+			str.append(e.getId());
+			str.append("  ");
+			str.append(tipo);
 			if (e.isRefrigeracion())
-				ret.append("  Con refrigeración");
+				str.append("  Con refrigeración");
 			else
-				ret.append("  Sin refrigeración");
-			ret.append("  Capacidad libre: ");
-			ret.append(e.getCapacidadLibre());
-			ret.append(" L");
-			ret.append ("\n");
+				str.append("  Sin refrigeración");
+			str.append("  Capacidad libre: ");
+			str.append(e.getCapacidadLibre());
+			str.append(" L");
+			str.append ("\n");
 		}
-		ret.append ("\n");
-		ret.append ("\n");
+		str.append ("\n");
+		str.append ("\n");
 		
 		//Impresion de transportes
-		ret.append ("Transportes: ");
-		ret.append(this.transportes.size());
-		ret.append ("\n");
+		str.append ("Transportes: ");
+		str.append(this.transportes.size());
+		str.append ("\n");
 		Iterator<String> it = this.transportes.keySet().iterator();
 		while (it.hasNext()) {
 			Transporte transporte = this.transportes.get(it.next());
@@ -412,17 +392,17 @@ public class Empresa {
 			String tipo = String.valueOf(transporte.getClass());
 			//Eliminacion de la palabra class
 			tipo = tipo.substring(6, tipo.length());
-			ret.append ("Vehiculo ");
-			ret.append(transporte.getId());
-			ret.append(" " );
-			ret.append(tipo);
-			ret.append("\n");
+			str.append ("Vehiculo ");
+			str.append(transporte.getId());
+			str.append(" " );
+			str.append(tipo);
+			str.append("\n");
 		}
 		
-		ret.append("\n");
-		ret.append(toStringenViajeYFrios());
-		ret.append("\n");
-		return ret.toString();
+		str.append("\n");
+		str.append(toStringenViajeYFrios());
+		str.append("\n");
+		return str.toString();
 	}
 	
 }

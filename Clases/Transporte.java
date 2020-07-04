@@ -13,7 +13,7 @@ public class  Transporte {
 	private ArrayList <Paquete> paquetes;
 	private Destino destino;
 	private boolean enViaje;
-	private double costoTotal;
+	private double costosExtras;
 	
 	//La id del transporte debe tener una longitud de 6 o 7 caracteres alfanumericos
 	//carga maxima, capacidad maxima y costo por Km deben ser mayor a cero
@@ -36,7 +36,7 @@ public class  Transporte {
 		
 		paquetes = new ArrayList <Paquete>();
 		this.refrigeracion = refrigeracion;
-		this.costoTotal=0;
+		this.costosExtras=0;
 		this.id = id;
 		this.cargaMaxima = cargaMaxima;
 		this.cargaLibre = cargaMaxima;
@@ -69,55 +69,68 @@ public class  Transporte {
 		return enViaje;
 	}
 
-	public double getCostoTotal() {
-		return costoTotal;
-	}
-	
-	protected void setCostoTotal(double costoTotal) {
-		this.costoTotal = costoTotal;
-	}
-	
+
 	public int cantPaquetes () {
 		return this.paquetes.size();
 	}
 	
 	public void asignarDestino (Destino destino) throws Exception {
 		
+		if (this.cantPaquetes() > 0)
+			throw new Exception ("El transporte ya esta cargado");
+		
+		if (this.destino != null)
+			throw new Exception ("EL transporte ya tiene un destino asignado");
+		
+		if (this.enViaje)
+			throw new Exception ("El transporte se encuentra en viaje");
+		
 		this.destino = destino;
-		calcularCostoTotal();
 	}
 
 	//Dado un paquete, revisa sus caraceristicas y de ser posible lo carga
 	//Devuelve el valor en L cargado
-	public double cargar (Paquete paquete, Deposito d) {
+	public boolean cargar (Paquete paquete) {
 		
-		double cargado = 0;
-		try {
-			if (paquete.getPeso() <= this.cargaLibre
-				&& paquete.getVolumen() <= this.capacidadLibre) {
+		//Verifica todas las caracteristicas del paquetes y transporte
+		//De ser posible, lo suma a la carga
+		if (paquete.getPeso() <= this.cargaLibre
+			&& paquete.getVolumen() <= this.capacidadLibre) {
+				
+			if (this.refrigeracion && paquete.isFrio() || !this.refrigeracion 
+				&& !paquete.isFrio()) {
 					
-				if (this.refrigeracion && paquete.isFrio() || !this.refrigeracion 
-					&& !paquete.isFrio()) {
-						
-						this.paquetes.add(paquete);
-						cargaLibre -= paquete.getPeso();
-						capacidadLibre -= paquete.getVolumen();
-						cargado += paquete.getVolumen();
-				}
+					this.paquetes.add(paquete);
+					//Baja la carga y capacidad libre del transporte
+					cargaLibre -= paquete.getPeso();
+					capacidadLibre -= paquete.getVolumen();
+					return true;
 			}
-		} catch (NullPointerException e) {
-		   System.out.print ("El transporte no tiene un destino asignado");
 		}
-		return cargado;
+		return false;
 	}
 	
-	//Suma un costo que le otorga la empresa
-	public void sumarCosto (double costoExtra) throws Exception {
+	//Dado un paquete y un precio por tonelada, realiza la suma necesaria a costos Extras
+	public void sumarCostosTercerizadoFrio(Paquete paquete, double precioPorTonelada) throws Exception {
+		if (paquete == null)
+			throw new Exception ("Debe recibir un paquete");
 		
-		if (costoExtra <= 0)
-			throw new Exception ("El costo a sumar debe ser mayor a cero");
+		if (precioPorTonelada < 0)
+			throw new Exception ("El precio por tonelada deve ser igual o mayor a cero");
 		
-		this.costoTotal += costoExtra;
+		if (paquete.isFrio()) {
+			this.costosExtras += (paquete.getPeso() * precioPorTonelada) / 1000;
+		}
+		
+	}
+	
+	
+	public double volumenCargado() {
+		double volumen = 0;
+		for (Paquete p: this.paquetes) {
+			volumen += p.getVolumen();
+		}
+		return volumen;
 	}
 	
 	//Inicia viaje, el transporte debe estar cargado y tener un viaje previamente asignado 
@@ -158,6 +171,35 @@ public class  Transporte {
 		throw new Exception ("El transporte no tiene destino asignado");
 	}
 	
+	public double darCostoTotal() throws Exception {
+		return costosExtras + calcularCostoTotal();
+	}
+	
+	public boolean reemplazablePor(Transporte t) {
+		//Corrobora que el transporte que se envia este vacío, sin destino
+		//Y que tenga las características necesarias para intercambiar la carga
+		if (t.getDestino() == null &&
+				t.cantPaquetes() == 0 &&
+				t.getClass().equals(this.getClass()) &&
+				t.getCapacidadMaxima() >= this.getCapacidadMaxima() &&
+				t.getCargaMaxima() >= this.getCargaMaxima()){
+			
+			if ((t.isRefrigeracion() && this.isRefrigeracion()) ||
+					(!t.isRefrigeracion() && !this.isRefrigeracion())){
+				return true;
+			}
+			
+		}
+		return false;
+	}
+	
+	public void reemplazarPor (Transporte t) throws Exception {
+		//Le otorga al transporte nuevo el mismo destino
+		//que el transporte averiado
+		t.destino = this.destino;
+		t.recibirCarga (this);
+	}
+	
 	public void recibirCarga(Transporte t) throws Exception {
 		
 		//Le otorga los paquetes del transporte averiado al 
@@ -169,10 +211,7 @@ public class  Transporte {
 		
 		this.cargaLibre = this.cargaMaxima - pesoOcupado;
 		this.capacidadLibre = this.capacidadMaxima - capacidadOcupada;
-		
-		//Le otorga al nuevo transporte el costo del transporte anterior
-		this.costoTotal = t.getCostoTotal();
-		
+
 		//Vacia la carga del transporte averiado
 		t.finalizarViaje();
 		
@@ -182,7 +221,7 @@ public class  Transporte {
 		
 		StringBuilder str = new StringBuilder ();
 		for (Transporte t: list) {
-			str.append(t.toString() + "\n");
+			str.append(t.toString()).append("\n");
 		}
 		
 		return str.toString();
@@ -200,6 +239,9 @@ public class  Transporte {
 	//Debe tener mismo destino, ser el mismo tipo y llevar la misma carga
 	@Override
 	public boolean equals (Object obj) {
+		
+		if (obj == null)
+			return false;
 		
 		if (obj instanceof Transporte) {
 			//Casteo de objeto obj
@@ -253,6 +295,12 @@ public class  Transporte {
 		//Retorna falso si no es un transporte
 		return false;
 	}
+
+
+
+
+
+
 
 
 }

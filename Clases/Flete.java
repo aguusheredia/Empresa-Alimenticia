@@ -25,7 +25,6 @@ public class Flete extends Transporte {
 	public double calcularCostoTotal() throws Exception {
 		
 		double cargado = super.calcularCostoTotal() + (this.costoFijoPasajero * this.cantidadPasajeros);
-		this.setCostoTotal(cargado);
 		return cargado;
 	}
 

@@ -9,6 +9,9 @@ public class Destino {
 	public Destino (String ubicacion, int distancia) throws Exception{
 		
 		//Excepciones para cumplir el IREP
+		if (ubicacion == null)
+			throw new Exception ("El destino debe tener una ubicación");
+		
 		if (ubicacion.length() == 0) 
 			throw new Exception ("El destino no debe ser vacio");
 		
@@ -29,6 +32,9 @@ public class Destino {
 	
 	@Override
 	public boolean equals (Object obj) {
+		if (obj == null)
+			return false;
+		
 		if (obj instanceof Destino) {
 			Destino d = (Destino) obj;
 			if (this.ubicacion.equals(d.ubicacion) && this.distancia == d.distancia)

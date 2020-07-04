@@ -49,7 +49,7 @@ public class Deposito {
 		//Verifica capacidad
 		if (paquete.getVolumen() <= this.capacidadLibre){
 			//Verifica si requiere frio el paquete
-			if (!paquete.isFrio() || 
+			if (!paquete.isFrio() && !this.refrigeracion || 
 					(paquete.isFrio() && this.refrigeracion)){
 				//Si no habia paquetes con el mismo destino
 				if (!this.paquetes.containsKey(paquete.getDestino()))
@@ -67,36 +67,28 @@ public class Deposito {
 	}
 	
 	//Al cargar el transporte devuelve el volumen y el peso de lo cargado
-	public double[] cargarTransporte (Transporte transporte, String destino) {
+	public void cargarTransporte (Transporte transporte, String destino) throws Exception {
 		
-		double [] ret = new double [2];
-		ret[0] = 0;
-		ret [0] = 0;
-		
-		if (!this.paquetes.containsKey(destino)) 
-			return ret;		
-		
-		double volumenTotal = 0;
-		double volumenPaquete;
-		double peso = 0;
-		
-		ArrayList <Paquete> p = this.paquetes.get(destino);
-		Iterator<Paquete> it = p.iterator();
-		while (it.hasNext()) {
-			Paquete paquete = (Paquete) it.next();
-			volumenPaquete = transporte.cargar(paquete, this);
+		if (this.paquetes.containsKey(destino)) { 
 			
-			if (volumenPaquete > 0) {
-				this.capacidadLibre += paquete.getVolumen();
-				volumenTotal += volumenPaquete;
-				peso += paquete.getPeso();
-				it.remove();
+			ArrayList <Paquete> p = this.paquetes.get(destino);
+			Iterator<Paquete> it = p.iterator();
+			while (it.hasNext()) {
+				
+				Paquete paquete = (Paquete) it.next();
+				if (transporte.cargar(paquete)) {
+					//Si el transporte pudo agregar el paquete
+					this.capacidadLibre += paquete.getVolumen();
+					//Si el deposito es tercerizado y frigorifico, le agrega costos extras al transporte
+					if (this instanceof DepositoTercerizado && this.isRefrigeracion()) {
+						DepositoTercerizado d = (DepositoTercerizado) this;
+						transporte.sumarCostosTercerizadoFrio(paquete, d.getPrecioTonelada());
+					}
+					//Elimina el paquete del deposito
+					it.remove();
+				}
 			}
-		}
-		
-		ret [0] = volumenTotal;
-		ret [1] = peso;
-		return ret;
+		}	
 	}
 
 	
@@ -109,11 +101,7 @@ public class Deposito {
 			Iterator<String> it =this.paquetes.keySet().iterator();
 			while (it.hasNext()) {
 				ArrayList <Paquete> list = (ArrayList<Paquete>) this.paquetes.get(it.next());
-				for (Paquete paquete: list) {
-					if (paquete.isFrio()) {
-						cont ++;
-					}
-				}
+				cont += list.size();
 			}
 		}
 		
@@ -122,25 +110,26 @@ public class Deposito {
 	
 	@Override
 	public String toString () {
-		StringBuilder ret = new StringBuilder ("Deposito ");
-		ret.append (this.id + "\n");
-		ret.append ("Capacidad maxima ");
-		ret.append (this.capacidadMaxima);
-		ret.append("L");
-		ret.append ("\n");
-		ret.append ("\n");
+		StringBuilder str = new StringBuilder ("Deposito ");
+		str.append (this.id);
+		str.append ("\n");
+		str.append ("Capacidad maxima ");
+		str.append (this.capacidadMaxima);
+		str.append("L");
+		str.append ("\n");
+		str.append ("\n");
 		
 		Iterator<String> it = this.paquetes.keySet().iterator();
 		while (it.hasNext()) {
 			String key = (String) it.next();
-			ret.append("Paquetes con destino a ");
-			ret.append(key);
-			ret.append(": ");
-			ret.append(this.paquetes.get(key).size());
-			ret.append ("\n");
+			str.append("Paquetes con destino a ");
+			str.append(key);
+			str.append(": ");
+			str.append(this.paquetes.get(key).size());
+			str.append ("\n");
 		}
 		
-		return ret.toString();
+		return str.toString();
 	}
 
 }

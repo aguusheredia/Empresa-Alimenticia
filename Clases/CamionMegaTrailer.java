@@ -38,7 +38,6 @@ public class CamionMegaTrailer extends Transporte  {
 	public double calcularCostoTotal() throws Exception {
 		
 		double cargado = super.calcularCostoTotal() + this.seguroDeCarga + this.costoFijo + this.gastoComida;
-		this.setCostoTotal(cargado);
 		return cargado;
 	}
 
