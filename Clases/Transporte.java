@@ -17,22 +17,24 @@ public class  Transporte {
 	
 	//La id del transporte debe tener una longitud de 6 o 7 caracteres alfanumericos
 	//carga maxima, capacidad maxima y costo por Km deben ser mayor a cero
+	//Carga libre y capacidad libre no pueden ser mayores a carga maxima y capacidad maxima respectivamente.
+	//El transporte tiene una carga, representada con una lista que tiene elementos Paquete.
 	
 	public Transporte (String id, double cargaMaxima, double capacidadMaxima, double costoKm, boolean refrigeracion) throws Exception{
 		
 		//Excepciones para controlar el IREP
 		if (!Verificacion.verificarPatente(id)) 
-			throw new Exception ("La patente debe tener 6 o 7 caracteres con el siguiente formato: "
+			throw new RuntimeException ("La patente debe tener 6 o 7 caracteres con el siguiente formato: "
 					+ "JBY261, AA123BB");
 		
 		if (cargaMaxima <= 0)
-			throw new Exception ("La carga maxima debe ser mayor a cero");
+			throw new RuntimeException ("La carga maxima debe ser mayor a cero");
 		
 		if (capacidadMaxima <= 0) 
-			throw new Exception ("La capacidad maxima debe ser mayor a cero");
+			throw new RuntimeException ("La capacidad maxima debe ser mayor a cero");
 		
 		if (costoKm <= 0) 
-			throw new Exception ("El costo por Km debe ser mayor a cero");
+			throw new RuntimeException ("El costo por Km debe ser mayor a cero");
 		
 		paquetes = new ArrayList <Paquete>();
 		this.refrigeracion = refrigeracion;
@@ -45,26 +47,15 @@ public class  Transporte {
 		this.costoKm = costoKm;
 	}
 	
-	public double getCargaMaxima() {
-		return cargaMaxima;
-	}
-
-	public double getCapacidadMaxima() {
-		return capacidadMaxima;
-	}
 	
 	public String getId() {
 		return id;
 	}
 
-	public boolean isRefrigeracion() {
-		return refrigeracion;
-	}
-
 	public Destino getDestino() {
 		return destino;
 	}
-
+	
 	public boolean isEnViaje() {
 		return enViaje;
 	}
@@ -77,28 +68,34 @@ public class  Transporte {
 	public void asignarDestino (Destino destino) throws Exception {
 		
 		if (this.cantPaquetes() > 0)
-			throw new Exception ("El transporte ya esta cargado");
+			throw new RuntimeException ("El transporte ya esta cargado");
 		
 		if (this.destino != null)
-			throw new Exception ("EL transporte ya tiene un destino asignado");
+			throw new RuntimeException ("EL transporte ya tiene un destino asignado");
 		
 		if (this.enViaje)
-			throw new Exception ("El transporte se encuentra en viaje");
+			throw new RuntimeException ("El transporte se encuentra en viaje");
 		
 		this.destino = destino;
 	}
 
 	//Dado un paquete, revisa sus caraceristicas y de ser posible lo carga
 	//Devuelve el valor en L cargado
-	public boolean cargar (Paquete paquete) {
+	public boolean cargarPaquete (Paquete paquete) {
+		
+		if (this.enViaje)
+			throw new RuntimeException  ("El transporte no puede cargar paquetes si se encuentra en viaje");
+		
+		if (this.destino == null)
+			throw new RuntimeException ("El transporte debe tener un destino asignado para cargar paquetes");
 		
 		//Verifica todas las caracteristicas del paquetes y transporte
 		//De ser posible, lo suma a la carga
 		if (paquete.getPeso() <= this.cargaLibre
-			&& paquete.getVolumen() <= this.capacidadLibre) {
+			&& paquete.getVolumen() <= this.capacidadLibre
+			&& this.destino.getUbicacion().equals(paquete.getDestino())) { 
 				
-			if (this.refrigeracion && paquete.isFrio() || !this.refrigeracion 
-				&& !paquete.isFrio()) {
+			if (this.refrigeracion == paquete.isFrio()) {
 					
 					this.paquetes.add(paquete);
 					//Baja la carga y capacidad libre del transporte
@@ -110,17 +107,13 @@ public class  Transporte {
 		return false;
 	}
 	
-	//Dado un paquete y un precio por tonelada, realiza la suma necesaria a costos Extras
-	public void sumarCostosTercerizadoFrio(Paquete paquete, double precioPorTonelada) throws Exception {
-		if (paquete == null)
-			throw new Exception ("Debe recibir un paquete");
+	//Dado costo extras, realiza la suma necesaria a costos Extras
+	public void sumarCostosExtras(double costoExtra) throws Exception {
 		
-		if (precioPorTonelada < 0)
-			throw new Exception ("El precio por tonelada deve ser igual o mayor a cero");
+		if (costoExtra < 0)
+			throw new RuntimeException ("El costo extra debe ser mayor a cero");
 		
-		if (paquete.isFrio()) {
-			this.costosExtras += (paquete.getPeso() * precioPorTonelada) / 1000;
-		}
+		this.costosExtras += costoExtra;
 		
 	}
 	
@@ -135,11 +128,10 @@ public class  Transporte {
 	
 	//Inicia viaje, el transporte debe estar cargado y tener un viaje previamente asignado 
 	public void iniciarViaje () throws Exception{
-		if (this.enViaje == true || this.destino == null || this.paquetes.size() == 0 )
-			throw new Exception ("El transporte ya esta en viaje, no tiene viaje asignado o no esta cargado");
+		if (this.enViaje == true || this.destino == null || cantPaquetes() == 0 )
+			throw new RuntimeException ("El transporte ya esta en viaje, no tiene viaje asignado o no esta cargado");
 		
-		else
-			this.enViaje = true;
+		this.enViaje = true;
 	}
 	
 
@@ -147,15 +139,14 @@ public class  Transporte {
 	public void finalizarViaje () throws Exception{
 		
 		if (!this.enViaje)
-			throw new Exception ("El transporte no se encuentra en viaje");
+			throw new RuntimeException ("El transporte no se encuentra en viaje");
 		
-		else {
-			this.enViaje=false;
-			vaciarCarga();
-			this.cargaLibre = this.cargaMaxima;
-			this.capacidadLibre = this.capacidadMaxima;
-			this.destino = null;
-		}
+		this.enViaje=false;
+		vaciarCarga();
+		this.cargaLibre = this.cargaMaxima;
+		this.capacidadLibre = this.capacidadMaxima;
+		this.destino = null;
+		this.costosExtras = 0;
 	}
 	
 	//Vacia su carga
@@ -163,29 +154,33 @@ public class  Transporte {
 		paquetes.clear();
 	}
 
-	public double calcularCostoTotal () throws Exception{
+	protected double calcularCosto () throws Exception{
 		
 		if (this.destino != null)
 			return this.destino.getDistancia() * this.costoKm;
 		
-		throw new Exception ("El transporte no tiene destino asignado");
+		throw new RuntimeException ("El transporte no tiene destino asignado");
 	}
 	
 	public double darCostoTotal() throws Exception {
-		return costosExtras + calcularCostoTotal();
+		
+		if (!this.enViaje)
+			throw new RuntimeException ("El transporte debe estar en viaje para otorgar el costo total");
+		
+		return costosExtras + calcularCosto();
 	}
 	
+	//Dado un transporte, verifica si puede reemplazar al actual
 	public boolean reemplazablePor(Transporte t) {
 		//Corrobora que el transporte que se envia este vacío, sin destino
 		//Y que tenga las características necesarias para intercambiar la carga
-		if (t.getDestino() == null &&
+		if (t.destino == null &&
 				t.cantPaquetes() == 0 &&
 				t.getClass().equals(this.getClass()) &&
-				t.getCapacidadMaxima() >= this.getCapacidadMaxima() &&
-				t.getCargaMaxima() >= this.getCargaMaxima()){
+				t.capacidadMaxima >= this.capacidadMaxima &&
+				t.cargaMaxima >= this.cargaMaxima){
 			
-			if ((t.isRefrigeracion() && this.isRefrigeracion()) ||
-					(!t.isRefrigeracion() && !this.isRefrigeracion())){
+			if ((t.refrigeracion == this.refrigeracion)){
 				return true;
 			}
 			
@@ -193,15 +188,35 @@ public class  Transporte {
 		return false;
 	}
 	
+	//Dado un transporte, realiza el reemplazo
 	public void reemplazarPor (Transporte t) throws Exception {
 		//Le otorga al transporte nuevo el mismo destino
 		//que el transporte averiado
 		t.destino = this.destino;
-		t.recibirCarga (this);
+		t.recibirCargaDeTransporte (this);
+		t.iniciarViaje();
 	}
 	
-	public void recibirCarga(Transporte t) throws Exception {
+	//Dado un transporte, recibe la carga
+	private void recibirCargaDeTransporte(Transporte t) throws Exception {
 		
+		if (this.capacidadMaxima < t.capacidadMaxima )
+			throw new RuntimeException ("El transporte debe tener una capacidad mayor");
+		
+		if (this.cargaMaxima < t.cargaMaxima)
+			throw new RuntimeException ("El transporte debe tener una carga mayor");
+		
+		if(this.cantPaquetes() != 0)
+			throw new RuntimeException ("El transporte no debe tener paquetes alojados");
+		
+		if (!t.getClass().equals(this.getClass()))
+			throw new RuntimeException ("Los transportes deben ser del mismo tipo");
+		
+		if (!this.destino.equals(t.destino))
+			throw new RuntimeException ("Los transportes debes tener el mismo destino");
+		
+		if (this.refrigeracion != t.refrigeracion)
+			throw new RuntimeException ("Los transportes deben tener las mismas condiciones de refrigeración");
 		//Le otorga los paquetes del transporte averiado al 
 		//transporte nuevo
 		this.paquetes.addAll(t.paquetes);
@@ -211,6 +226,7 @@ public class  Transporte {
 		
 		this.cargaLibre = this.cargaMaxima - pesoOcupado;
 		this.capacidadLibre = this.capacidadMaxima - capacidadOcupada;
+		this.costosExtras = t.costosExtras;
 
 		//Vacia la carga del transporte averiado
 		t.finalizarViaje();
@@ -248,7 +264,7 @@ public class  Transporte {
 			Transporte o = (Transporte) obj;
 			
 			//Verifica que tenga las mismas caracteristicas
-			if (o.getDestino().equals(this.getDestino())
+			if (o.destino.equals(this.destino)
 					&& o.getClass().equals(this.getClass())) {
 				
 				//Crea un nuevo array para no modificar el original
@@ -269,14 +285,14 @@ public class  Transporte {
 						
 						Iterator <Paquete> kit = list.iterator();
 						//Variable para para ejecución
-						boolean stop = false;
-						while (kit.hasNext() && !stop) {
+						boolean next = true;
+						while (kit.hasNext() && true) {
 							Paquete p2 = kit.next();
 							
 							//Si encuentra el paquete, lo elimina de la lista y para la ejecucion
 							if (p1.equals(p2)) {
 								kit.remove();
-								stop = true;
+								next = false;
 								find = true;
 							}
 						}

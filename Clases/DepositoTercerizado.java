@@ -9,12 +9,22 @@ public class DepositoTercerizado extends Deposito{
 		super(refrigeracion, capacidadMaxima, id);
 		
 		if (precioTonelada <= 0 && refrigeracion)
-			throw new Exception ("El precio por tonelada debe ser mayor a cero");
+			throw new RuntimeException ("El precio por tonelada debe ser mayor a cero");
 		
-		this.precioTonelada = precioTonelada;
+		if (refrigeracion)
+			this.precioTonelada = precioTonelada;
 	}
-
-	public double getPrecioTonelada() {
-		return precioTonelada;
+	
+	@Override
+	public boolean cargarPaqueteATransporte (Transporte transporte, Paquete paquete) throws Exception {
+		if (super.cargarPaqueteATransporte(transporte, paquete)){
+			if (paquete != null && paquete.isFrio()){
+				double costoExtra = (paquete.getPeso() * this.precioTonelada) / 1000;
+				transporte.sumarCostosExtras(costoExtra);
+			}
+			return true;
+		}
+		
+		return false;
 	}
 }

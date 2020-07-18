@@ -11,7 +11,7 @@ public class CamionTrailer extends Transporte  {
 		
 		//Excepcion para cumplir el IREP
 		if (seguroDeCarga <= 0) 
-			throw new Exception ("El seguro de carga debe ser mayor a cero");
+			throw new RuntimeException ("El seguro de carga debe ser mayor a cero");
 		
 		this.seguroDeCarga = seguroDeCarga;
 	}
@@ -19,15 +19,15 @@ public class CamionTrailer extends Transporte  {
 	@Override
 	public void asignarDestino (Destino destino) throws Exception {
 		if (destino.getDistancia() > 500)
-			throw new Exception ("Los camiones trailer solo hacer viajes menores a 500 KM");
+			throw new RuntimeException ("Los camiones trailer solo hacer viajes menores a 500 KM");
 		
 		super.asignarDestino(destino);
 	}
 	
 	@Override
-	public double calcularCostoTotal() throws Exception {
+	public double calcularCosto() throws Exception {
 		
-			double cargado = super.calcularCostoTotal() + this.seguroDeCarga;
+			double cargado = super.calcularCosto() + this.seguroDeCarga;
 			return cargado;
 	}
 }

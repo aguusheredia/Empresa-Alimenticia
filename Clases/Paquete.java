@@ -12,13 +12,13 @@ public class Paquete {
 		
 		//Excepsiones para cumplir el IREP
 		if (destino.length() == 0) 
-			throw new Exception("Debe asignar un destino");
+			throw new RuntimeException ("Debe asignar un destino");
 		
 		if (peso <= 0) 
-			throw new Exception ("El peso debe ser mayor a cero");
+			throw new RuntimeException ("El peso debe ser mayor a cero");
 		
 		if (volumen <= 0) 
-			throw new Exception ("El volumen debe ser mayor a cero");
+			throw new RuntimeException ("El volumen debe ser mayor a cero");
 		
 		this.frio = frio;
 		this.destino = destino;

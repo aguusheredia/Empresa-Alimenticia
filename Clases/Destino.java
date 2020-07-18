@@ -3,20 +3,20 @@ public class Destino {
 	private String ubicacion;
 	private int distancia;
 	
-	//El destino debe ser una cadena no vacia
-	//La distancia debe ser mayor a cero
+	//La ubicación debe ser una cadena no vacia y no debe ser null.
+	//La distancia debe ser mayor a cero.
 	
 	public Destino (String ubicacion, int distancia) throws Exception{
 		
 		//Excepciones para cumplir el IREP
 		if (ubicacion == null)
-			throw new Exception ("El destino debe tener una ubicación");
+			throw new RuntimeException ("El destino debe tener una ubicación");
 		
 		if (ubicacion.length() == 0) 
-			throw new Exception ("El destino no debe ser vacio");
+			throw new RuntimeException ("El destino no debe ser vacio");
 		
 		if (distancia <= 0)
-			throw new Exception ("La distancia debe ser mayor a cero");
+			throw new RuntimeException ("La distancia debe ser mayor a cero");
 		
 		this.ubicacion = ubicacion;
 		this.distancia = distancia;

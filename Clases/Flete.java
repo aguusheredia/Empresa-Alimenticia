@@ -12,19 +12,19 @@ public class Flete extends Transporte {
 			
 		//Excepciones para controlar el IREP
 		if (costoFijoPasajero <= 0) 
-			throw new Exception ("El costo fijo por pasajero debe ser mayor a cero");
+			throw new RuntimeException ("El costo fijo por pasajero debe ser mayor a cero");
 		
 		if (cantPasajeros <= 0) 
-			throw new Exception ("La cantidad de pasajeros debe ser mayor a cero");
+			throw new RuntimeException ("La cantidad de pasajeros debe ser mayor a cero");
 		
 		this.costoFijoPasajero = costoFijoPasajero;
 		this.cantidadPasajeros = cantPasajeros;
 	}
 
 	@Override
-	public double calcularCostoTotal() throws Exception {
+	public double calcularCosto() throws Exception {
 		
-		double cargado = super.calcularCostoTotal() + (this.costoFijoPasajero * this.cantidadPasajeros);
+		double cargado = super.calcularCosto() + (this.costoFijoPasajero * this.cantidadPasajeros);
 		return cargado;
 	}
 

@@ -13,13 +13,13 @@ public class CamionMegaTrailer extends Transporte  {
 
 		//Excepciones para cumplir el IREP
 		if (seguroDeCarga <= 0)
-			throw new Exception ("El seguro de carga debe ser mayor a cero");
+			throw new RuntimeException ("El seguro de carga debe ser mayor a cero");
 		
 		if (seguroDeCarga <= 0) 
-			throw new Exception ("El costo Fijo debe ser mayor a cero");
+			throw new RuntimeException ("El costo Fijo debe ser mayor a cero");
 		
 		if (seguroDeCarga <= 0) 
-			throw new Exception ("El gasto de comida debe ser mayor a cero");
+			throw new RuntimeException ("El gasto de comida debe ser mayor a cero");
 		
 			this.seguroDeCarga = seguroDeCarga;
 			this.costoFijo = costoFijo;
@@ -29,15 +29,15 @@ public class CamionMegaTrailer extends Transporte  {
 	@Override
 	public void asignarDestino (Destino destino) throws Exception {
 		if (destino.getDistancia() <= 500)
-			throw new Exception ("Los camiones mega trailer solo hacer viajes mayores a 500 KM");
+			throw new RuntimeException ("Los camiones mega trailer solo hacer viajes mayores a 500 KM");
 		
 		super.asignarDestino(destino);
 	}
 	
 	@Override
-	public double calcularCostoTotal() throws Exception {
+	public double calcularCosto() throws Exception {
 		
-		double cargado = super.calcularCostoTotal() + this.seguroDeCarga + this.costoFijo + this.gastoComida;
+		double cargado = super.calcularCosto() + this.seguroDeCarga + this.costoFijo + this.gastoComida;
 		return cargado;
 	}
 

@@ -13,11 +13,13 @@ public class Deposito {
 	
 	//El nombre debe ser una cadena no vacia
 	//La capacidad maxima debe ser mayor a cero
+	//La capacidad libre debe ser menor a capacidad maxima.
+	//Los paquetes están representados por un HashMap, donde las claves son strings de destinos de los paquetes y los valores son listas con paquetes con los destinos correspondientes.
 	
 	public Deposito(boolean refrigeracion, double capacidadMaxima , int id) throws Exception {
 		
 		if (capacidadMaxima <= 0) 
-			throw new Exception ("La capacidad maxima debe ser mayor a cero");
+			throw new RuntimeException ("La capacidad maxima debe ser mayor a cero");
 		
 		paquetes = new HashMap <String, ArrayList<Paquete>>();
 		this.refrigeracion = refrigeracion;
@@ -26,14 +28,10 @@ public class Deposito {
 		this.id = id;
 	}
 
-
 	public boolean isRefrigeracion() {
 		return refrigeracion;
 	}
 
-	public double getCapacidad() {
-		return this.capacidadMaxima;
-	}
 	
 	public double getCapacidadLibre() {
 		return this.capacidadLibre;
@@ -48,9 +46,8 @@ public class Deposito {
 	public boolean agregarPaquete (Paquete paquete) {
 		//Verifica capacidad
 		if (paquete.getVolumen() <= this.capacidadLibre){
-			//Verifica si requiere frio el paquete
-			if (!paquete.isFrio() && !this.refrigeracion || 
-					(paquete.isFrio() && this.refrigeracion)){
+			//Verifica condiciones de refrigeracion del paquete y deposito
+			if (paquete.isFrio() == this.refrigeracion){
 				//Si no habia paquetes con el mismo destino
 				if (!this.paquetes.containsKey(paquete.getDestino()))
 					this.paquetes.put(paquete.getDestino(), new ArrayList<Paquete>());
@@ -59,7 +56,7 @@ public class Deposito {
 				this.capacidadLibre -= paquete.getVolumen();
 				return true;
 			}
-			//Si no cumple con las condiciones de frio
+			//Si no cumple con las mismas condiciones de frio
 			return false;
 		}
 		//Si no hay lugar en el deposito
@@ -76,24 +73,30 @@ public class Deposito {
 			while (it.hasNext()) {
 				
 				Paquete paquete = (Paquete) it.next();
-				if (transporte.cargar(paquete)) {
+				if (cargarPaqueteATransporte(transporte, paquete)) {
 					//Si el transporte pudo agregar el paquete
 					this.capacidadLibre += paquete.getVolumen();
-					//Si el deposito es tercerizado y frigorifico, le agrega costos extras al transporte
-					if (this instanceof DepositoTercerizado && this.isRefrigeracion()) {
-						DepositoTercerizado d = (DepositoTercerizado) this;
-						transporte.sumarCostosTercerizadoFrio(paquete, d.getPrecioTonelada());
-					}
 					//Elimina el paquete del deposito
 					it.remove();
 				}
 			}
-		}	
+			
+			if (p.size() ==0)
+				this.paquetes.remove(destino);
+		}
+		
 	}
-
+	
+	//Dado un transporte y un paquete, realiza la carga del paquete al transporte
+	protected boolean cargarPaqueteATransporte (Transporte transporte, Paquete paquete) throws Exception {
+		if (transporte.cargarPaquete(paquete))
+			return true;
+		
+		return false;
+	}
 	
 	//Devuelve la cantidad de paquetes frios que hay en el deposito
-	public int paquetesFrios () {
+	public int cantidadPaquetesFrios () {
 		
 		int cont = 0;
 		
@@ -131,6 +134,6 @@ public class Deposito {
 		
 		return str.toString();
 	}
-
 }
+
 
