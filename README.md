@@ -1,4 +1,4 @@
-  El proyecto tiene como objetivo el modelaje de de una empresa alimenticia y su funcionamiento. Para dicho modelaje se
+  El proyecto tiene como objetivo el modelaje de una empresa alimenticia y su funcionamiento. Para dicho modelaje se
 utilizará el lenguaje informativo Java. Se utilizaran propiedades de programación orientada a objetos (Herencia, Polimorfismo,
 Sobreescritura,encapsulamiento).
 
